@@ -1,0 +1,8 @@
+{
+  "type": "torso",
+  "style": "robot",
+  "attack": 0,
+  "defense": 1,
+  "health": 5,
+  "speed": 0
+}

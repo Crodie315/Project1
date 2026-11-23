@@ -1,0 +1,13 @@
+# Godot cache — never commit
+.godot/
+
+# Exported game builds
+builds/
+
+# OS / editor clutter
+.DS_Store
+Thumbs.db
+
+# Maya autosaves and backups
+*.mb.swatches
+incrementalSave/

@@ -1,0 +1,8 @@
+{
+  "type": "head",
+  "style": "beast",
+  "attack": 1,
+  "defense": 2,
+  "health": 0,
+  "speed": 0
+}

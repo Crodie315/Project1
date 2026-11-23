@@ -1,0 +1,8 @@
+{
+  "type": "arm_R",
+  "style": "robot",
+  "attack": 2,
+  "defense": 1,
+  "health": 0,
+  "speed": 0
+}
