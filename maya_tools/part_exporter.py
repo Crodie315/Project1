@@ -209,6 +209,8 @@ STYLE_EXTRAS = {
     ]},
 }
 ROLE_COLORS = {"eye": (0.97, 0.97, 0.95), "glow": (0.3, 0.9, 1.0)}
+# Arms and legs are built this much thicker than the table (width and depth only). Same as Godot.
+LIMB_THICKNESS = 1.35
 
 
 def limb_pieces(style, part_type):
@@ -253,6 +255,8 @@ def build_placeholder(style, part_type, position=(0, 0, 0)):
     r, g, b = STYLE_COLORS.get(style, (0.7, 0.7, 0.7))
     pieces = []
     for i, (shape, size, pos, rot, role) in enumerate(limb_pieces(style, part_type)):
+        if part_type.startswith(("arm", "leg")):
+            size = (size[0] * LIMB_THICKNESS, size[1], size[2] * LIMB_THICKNESS)
         geo = _make_piece(style, shape, size, pos, rot, "%s_piece%d" % (name, i))
         if role == "dark":
             paint_color(geo, "cu_%s_dark_mat" % style, (r * 0.55, g * 0.55, b * 0.55))
