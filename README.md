@@ -3,6 +3,8 @@
 **Research Project 1** · Direction: *Connect things*: a Maya → Godot asset pipeline and the game it feeds.
 **Software:** Autodesk Maya 2025 (Python: part builder + exporter) · Godot 4.7.2 (GDScript: the game)
 
+**▶ Gameplay video (1:27):** https://youtu.be/L1p4YBYJGWM
+
 You start as a glowing ball with no body. You open treasure chests to collect body parts (a head, arms, legs, a torso) that were built and exported in Maya, and each part snaps onto you and changes your stats. Only a **complete body can fight**. Red NPCs chase you, and a purple BOSS hunts you and steals parts. Beat the BOSS to win.
 
 ---
@@ -42,7 +44,20 @@ Godot picks up the new files on its next import.
 
 ---
 
-## 2. Why the game has limbs
+## 2. What I set out to do
+
+My approved proposal (early Nov): **a Maya Python tool that builds and exports modular body parts with sockets and stats, feeding a small Godot game** in which a glowing sphere explores a map, opens crates to collect parts, and fights NPCs to win or lose parts. The direction was *connect things*: two programs joined by a pipeline, with the game proving that the pipeline works.
+
+The plan had three milestones:
+- **Nov 10: the pipeline works once.** One part exported from Maya snaps onto the sphere in Godot.
+- **Nov 17: the core loop.** The Maya tool is finished (naming, pivot check, JSON, export all); crates give random parts; stats add up.
+- **Nov 23: battles and polish.** A boss, win/lose, New Game, 2–3 styles of parts.
+
+I expected the riskiest part to be **the Maya → Godot hand-off**: socket names, cm vs m, pivots and orientation surviving FBX export. So it was the first thing I proved, on Nov 10 (`maya_tools/export_test_part.py`). The pipeline and the core loop work as proposed. The game around them grew a lot beyond the proposal; section 5 explains how and why.
+
+---
+
+## 3. Why the game has limbs
 
 Body parts are the centre of this project, so in the final version they became the main thing the player sees and plays with.
 
@@ -54,11 +69,11 @@ Body parts are the centre of this project, so in the final version they became t
 
 **4. Limbs make the movement read like a body.** With legs on, the ball stands up on them. Walking swings the legs from the hips, the arms swing opposite them, and the upper body bobs with each step. Jumping lifts the knees and throws the arms up. The animation is procedural: it turns the sockets (the joints), so it works on any part, including ones modelled by hand in Maya.
 
-**5. It shows off the pipeline.** Every limb is a part from the Maya tool, following the same naming and socket contract (section 5). The Maya builder and the Godot fallback use the same shape table, so a part rebuilt and re-exported from Maya looks and attaches exactly the same in the game.
+**5. It shows off the pipeline.** Every limb is a part from the Maya tool, following the same naming and socket contract (section 6). The Maya builder and the Godot fallback use the same shape table, so a part rebuilt and re-exported from Maya looks and attaches exactly the same in the game.
 
 ---
 
-## 3. Game mechanics
+## 4. Game mechanics
 
 ### Goal
 Collect a full body, survive the NPCs, and empty the BOSS's health bar.
@@ -123,7 +138,7 @@ Everything is built in code, so the project has no texture, model or audio files
 
 ---
 
-## 4. What changed from the proposal
+## 5. What changed from the proposal
 
 | Proposal | Final game | Why |
 |---|---|---|
@@ -131,12 +146,12 @@ Everything is built in code, so the project has no texture, model or audio files
 | Static boss | Boss always moving, chasing, grabbing chests, with a health bar | A boss that stood still and lost to one attack didn't feel like a boss. |
 | Static NPCs | NPCs in 5 designs that wander, chase and swipe | To make the player feel hunted. |
 | Plain crates | Treasure chests with an opening animation | So opening one feels like a reward. |
-| Placeholder blobs and bars | Recognisable limbs on the player and enemies | See section 2. |
+| Placeholder blobs and bars | Recognisable limbs on the player and enemies | See section 3. |
 | Win or lose parts in battles | The full-body rule, and losing a specific part when knocked out | One simple rule that anyone watching can follow. |
 
 ---
 
-## 5. The pipeline (Maya → Godot contract)
+## 6. The pipeline (Maya → Godot contract)
 
 The same rules are used on both sides:
 - **Part types:** `head`, `torso`, `arm_L`, `arm_R`, `leg_L`, `leg_R`. **Styles:** `robot`, `beast`, `slime`.
@@ -149,7 +164,62 @@ The same rules are used on both sides:
 
 ---
 
-## 6. Project layout
+## 7. How I verified it
+
+- I ran every version in Godot 4.7.2 and played it: opening chests, collecting a full body, fighting NPCs, losing parts to the boss, and beating the boss.
+- I recorded a full run: https://youtu.be/L1p4YBYJGWM (1:27).
+- Problems I found by playing, and how they were fixed:
+  - **Parts were hard to see.** The first exported parts were small blobs, and with five parts on, the player still looked like a bare ball. Fix: recognisable limb shapes, drawn larger and thicker, with the body standing on its legs.
+  - **The weapon looked like a limb.** The first flamethrower was an orange cylinder on the side of the ball, and it looked like a wooden stick of an arm. Fix: a grey gun shape with a glowing tip, held in the hand.
+  - **Script errors after adding new files.** Godot hadn't registered the new scripts' class names (`Could not find type "Sfx"`), and one variable's type couldn't be inferred. Fix: load those scripts by path with `preload()`, and give the variable an explicit type.
+  - **One arm was a plain cylinder.** Chests were still handing out my Nov 10 pipeline-test part (`placeholder_arm_L`). Fix: the game only loads parts in its three styles (robot, beast, slime). The test file stays in `parts/` as a record of that milestone.
+  - Fights were too easy and NPCs too slow. I tuned the boss and NPC speeds and added the warning wind-ups after playing.
+
+---
+
+## 8. What I learned
+
+- **The hand-off between programs is where the details matter.** Maya works in centimetres and Godot in metres. FBX export keeps node names, so naming rules (`<style>_<type>`, `socket_<type>`) are what let the game find a part's attach point, and even tell old exports from new ones. A shared contract has to be written down and followed on both sides.
+- **Godot's building blocks:** nodes and scenes, `CharacterBody3D` for things that move and collide, `Area3D` triggers for "the player walked up to this", signals to connect events, tweens for animation, and `process_mode` to pause the world while menus keep working.
+- **Sockets turned out to be more useful than planned.** They were meant for attaching parts, but rotating a socket also rotates everything attached to it, so the same sockets became the joints for the walk, jump and attack animations, on the player and every enemy.
+- **Game design: a rule only works if people can see it.** "Only a full body can fight" was invisible until the limbs were readable and the HUD showed `BODY 3/5`. Attacks feel fair only when they're telegraphed (the raised arms and orange glow). Small feedback like screen shake, a short freeze on hits and damage numbers makes a big difference in how the game feels.
+- **Test with real data, including old files.** The cylinder arm came from a leftover test export that the game was still loading. Filtering by the naming rules fixed it.
+- **Commit from day one.** I didn't set up git for this folder until the last day (see section 11), and the history doesn't show the three weeks of work. Next time the repo comes first.
+
+---
+
+## 9. What doesn't work yet
+
+- **The Maya part files are still the old one-blob exports.** The game swaps in the limb shapes, which the updated Maya builder also produces. Rebuilding and re-exporting from Maya would make every part in the game a real Maya export. I haven't done that final export yet.
+- **No pathfinding.** NPCs and the boss walk in straight lines, so they can get briefly stuck on chests or walls.
+- **Shots pass through chests and walls.** Projectiles only check for enemies.
+- **The camera angle is fixed**, and there's no gamepad support (keyboard and on-screen pad only).
+- **Health capsule edge case:** if you stand on a capsule with full HP and then get hurt, you have to step off and back on to pick it up.
+- **Balance is rough.** Damage, speeds and chest odds were tuned in a few playthroughs, not tested properly.
+- **No automated tests.** GUT tests were optional in the proposal and I didn't get to them.
+- The sound and music are simple synth sounds generated in code.
+
+---
+
+## 10. What I'd do next
+
+1. **Model real parts in Maya** for each style, not just the generated shapes, and export them through the tool. That's the pipeline used the way it was meant to be.
+2. **A Maya preview:** a player-sized reference body with the sockets in the game's positions, so a part can be checked for fit before exporting.
+3. **Pathfinding** with `NavigationAgent3D`, so enemies walk around chests and walls.
+4. **GUT tests** for the damage formula, part swapping and the full-body rule.
+5. **More enemy designs and a second arena**, and parts that do more than change numbers (for example, beast legs jump higher).
+6. **Export a Windows build**, so the game can be played without Godot installed.
+
+---
+
+## 11. How I worked
+
+- **The agent and me.** I used an AI coding agent (Claude) to write much of the code: the Godot scripts and the Maya builder. I set the direction and the rules, played every version, reported what looked or felt wrong, and decided what to change: real-time fights, the full-body rule, chests, limbs, NPCs that chase you. I can explain how each part works: the pipeline contract (section 6), the full-body rule (`_can_fight()` in `scripts/main.gd`), the boss and NPC state machines (`scripts/boss.gd`, `scripts/npc.gd`), and the socket-based animation (`scripts/player.gd`, `scripts/rig.gd`).
+- **Git history.** This project folder was not a git repository during development. I set up the repo on Nov 23, so the history starts then and doesn't show the three weeks of work. From that point on, each change is its own commit with a real message.
+
+---
+
+## 12. Project layout
 
 | File | What it does |
 |---|---|
@@ -173,16 +243,3 @@ All the numbers are constants at the top of the scripts:
 - `npc.gd` and `boss.gd`: speeds, ranges, wind-up times, and the `VARIANTS` lists. Copy a line to add a new design.
 
 The game prints its random seed when it starts. Set `game_seed` on the Main node to replay the same map.
-
----
-
-## Appendix: original proposal (Nov 2026)
-
-**Plan:** a Maya Python tool that builds and exports modular body parts with sockets and stats, feeding a small Godot game where a glowing sphere explores a map, opens crates and fights NPCs to win or lose parts.
-
-**Milestones as proposed:**
-- **Nov 10:** the pipeline works once (one part from Maya snaps onto the sphere).
-- **Nov 17:** the core loop (Maya tool finished; crates give parts; stats add up).
-- **Nov 23:** battles and polish (boss, win/lose, New Game, 2–3 styles).
-
-**Riskiest part as predicted:** the Maya → Godot hand-off (socket names, cm vs m, pivots, orientation). It was proven first, on Nov 10.
