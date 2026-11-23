@@ -100,7 +100,9 @@ func _read_info(fbx_path: String) -> Dictionary:
 		var data = JSON.parse_string(FileAccess.get_file_as_string(json_path))
 		if data is Dictionary:
 			info.merge(data, true)
-	if not TYPES.has(info["type"]):
+	# Only the game's three styles. Other exports (like the Nov 10 pipeline test,
+	# placeholder_arm_L, a plain cylinder) stay in the folder but aren't handed out.
+	if not TYPES.has(info["type"]) or not STYLES.has(info["style"]):
 		return {}
 	var defaults := default_stats(str(info["style"]), str(info["type"]))
 	for k in STAT_KEYS:
